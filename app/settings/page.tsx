@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { getSettings, saveSettings } from '@/app/actions/settings';
@@ -67,7 +67,7 @@ const EditableInput = ({ label, name, initialValue, type = "text", placeholder, 
     );
 };
 
-export default function SettingsPage() {
+function SettingsContent() {
   const searchParams = useSearchParams();
   const showBackBtn = searchParams.get('from') === 'projects';
   const [settings, setSettings] = useState<any>(null);
@@ -144,4 +144,12 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+}
+
+export default function SettingsPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-400">Loading settings...</div>}>
+            <SettingsContent />
+        </Suspense>
+    );
 }
