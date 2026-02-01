@@ -95,6 +95,7 @@ type Project = {
   tech_stack?: string;
   last_deployed_at?: string;
   webhook_secret: string;
+  subdomain: string;
 };
 
 export default function ProjectsPage() {
