@@ -3,23 +3,19 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { getLiveStats } from '@/app/actions/stats';
 
 function UsageMiniStats() {
   const [stats, setStats] = useState({ cpu: 0, ram: 0 });
 
   useEffect(() => {
     const fetchStats = async () => {
-      try {
-        const res = await fetch('http://127.0.0.1:4000/api/stats');
-        const data = await res.json();
-        if (data && data.length > 0) {
-          setStats({
-            cpu: data[0].cpu_percent,
-            ram: data[0].ram_percent
-          });
-        }
-      } catch (err) {
-        console.error('Failed to fetch sidebar stats');
+      const data = await getLiveStats();
+      if (data && data.length > 0) {
+        setStats({
+          cpu: data[0].cpu_percent,
+          ram: data[0].ram_percent
+        });
       }
     };
 
