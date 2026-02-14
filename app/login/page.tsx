@@ -40,7 +40,7 @@ export default async function LoginPage() {
           >
             <button 
               type="submit" 
-              className="w-full bg-sky-900 text-white font-mono uppercase text-sm font-bold py-3 px-4 hover:bg-sky-800 transition-colors border border-sky-900 flex items-center justify-center gap-2"
+              className="cursor-pointer w-full bg-sky-900 text-white font-mono uppercase text-sm font-bold py-3 px-4 hover:bg-sky-800 transition-colors border border-sky-900 flex items-center justify-center gap-2"
             >
               <span>Authenticate via Discord</span>
             </button>
