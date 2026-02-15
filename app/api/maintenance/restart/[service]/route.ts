@@ -4,9 +4,9 @@ export const runtime = 'nodejs';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { service: string } }
+    { params }: { params: Promise<{ service: string }> }
 ) {
-    const service = params.service;
+    const { service } = await params; 
     const BOT_API_URL = `http://127.0.0.1:4000/api/maintenance/restart/${service}`;
 
     const responseStream = new TransformStream();
