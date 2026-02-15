@@ -50,10 +50,9 @@ const ServiceSection = ({ title, serviceId, description }: { title: string, serv
 
     const handleRestart = () => {
         setIsProcessing(true);
-        setProgress({ status: 'progress', message: 'Connecting to API...' });
+        setProgress({ status: 'progress', message: 'Connecting to local bridge...' });
         
-        // SSE connection to the Discord Bot API
-        const eventSource = new EventSource(`http://127.0.0.1:4000/api/maintenance/restart/${serviceId}`);
+        const eventSource = new EventSource(`/api/maintenance/restart/${serviceId}`);
 
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
@@ -62,12 +61,13 @@ const ServiceSection = ({ title, serviceId, description }: { title: string, serv
             if (data.done) {
                 eventSource.close();
                 setIsProcessing(false);
-                fetchLogs(); // Refresh logs after success
+                fetchLogs(); 
             }
         };
 
         eventSource.onerror = () => {
-            setProgress({ status: 'error', message: 'Connection to backend lost.' });
+            // This will trigger if the Next.js app restarts itself (nydus-ui)
+            setProgress({ status: 'error', message: 'Bridge connection closed (Check if service is restarting).' });
             setIsProcessing(false);
             eventSource.close();
         };
