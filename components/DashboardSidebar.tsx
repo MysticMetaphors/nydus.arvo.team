@@ -74,6 +74,7 @@ export default function DashboardSidebar() {
     { name: 'Projects', path: '/projects', icon: 'fa-network-wired' },
     { name: 'Deployments', path: '/deployments', icon: 'fa-rocket' },
     { name: 'Maintenance', path: '/maintenance', icon: 'fa-screwdriver-wrench' },
+    { name: 'Cloudflare', path: '/cloudflare', icon: 'fa-cloudflare' },
     { name: 'Settings', path: '/settings', icon: 'fa-cogs' },
   ];
 
