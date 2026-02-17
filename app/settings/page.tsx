@@ -4,6 +4,10 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { getSettings, saveSettings } from '@/app/actions/settings';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 
 const EditableInput = ({ label, name, initialValue, type = "text", placeholder, note }: any) => {
     const [value, setValue] = useState(initialValue || '');
@@ -35,16 +39,16 @@ const EditableInput = ({ label, name, initialValue, type = "text", placeholder, 
 
     return (
         <div className="relative group">
-            <label className="block text-xs font-bold text-sky-600 uppercase tracking-wider mb-2">{label}</label>
+            <Label className="text-xs font-bold text-primary uppercase tracking-wider">{label}</Label>
             
-            <div className="relative">
+            <div className="relative mt-2">
                 <div className="absolute right-3 top-3 text-xs transition-opacity duration-300 pointer-events-none">
-                    {status === 'saving' && <span className="text-sky-500 animate-pulse">Saving...</span>}
-                    {status === 'saved' && <span className="text-green-600"><i className="fa-solid fa-check"></i> Saved</span>}
-                    {status === 'idle' && !isEditing && value && <i className="fa-solid fa-lock text-gray-300"></i>}
+                    {status === 'saving' && <span className="text-primary animate-pulse"><i className="fa-solid fa-spinner fa-spin"></i> Saving...</span>}
+                    {status === 'saved' && <span className="text-primary"><i className="fa-solid fa-check"></i> Saved</span>}
+                    {status === 'idle' && !isEditing && value && <i className="fa-solid fa-lock text-muted-foreground"></i>}
                 </div>
 
-                <input 
+                <Input
                     type={type} 
                     value={value}
                     readOnly={!isEditing}
@@ -53,16 +57,15 @@ const EditableInput = ({ label, name, initialValue, type = "text", placeholder, 
                     onBlur={() => {
                         if(value) setIsEditing(false);
                     }}
-                    className={`w-full p-4 text-sm font-mono border transition-all duration-200 outline-none
-                        ${isEditing 
-                            ? 'bg-white border-sky-500 text-black shadow-sm ring-1 ring-sky-100' 
-                            : 'bg-gray-50 border-gray-200 text-gray-500 cursor-pointer hover:bg-white hover:border-gray-300'
-                        }
-                    `}
+                    className={`font-mono transition-all duration-200 ${
+                        isEditing 
+                            ? 'bg-secondary border-primary text-foreground ring-1 ring-primary/20' 
+                            : 'bg-card border-border text-muted-foreground cursor-pointer hover:border-border'
+                    }`}
                     placeholder={placeholder} 
                 />
             </div>
-            {note && <p className="text-[10px] text-gray-400 mt-2">{note}</p>}
+            {note && <p className="text-[10px] text-muted-foreground mt-2">{note}</p>}
         </div>
     );
 };
@@ -79,29 +82,26 @@ function SettingsContent() {
   if (!settings) return null;
 
   return (
-    <div className="max-w-3xl mx-auto font-sans">
-      <div className="flex items-center justify-between border-b border-gray-200 pb-6 mb-8">
+    <div className="max-w-3xl">
+      <div className="flex items-center justify-between border-b border-border pb-6 mb-8">
         <div>
-            <h1 className="text-3xl font-black text-black uppercase tracking-tight">System Settings</h1>
-            <p className="text-sm text-gray-600 mt-2 font-medium">Configure external service integrations</p>
+            <h1 className="text-3xl font-bold text-foreground uppercase tracking-tight">System Settings</h1>
+            <p className="text-sm text-muted-foreground mt-2 font-medium">Configure external service integrations</p>
         </div>
         
         {showBackBtn && (
-            <Link 
-                href="/projects" 
-                className="px-6 py-3 text-sm font-bold bg-white text-black border border-gray-200 hover:bg-gray-50 transition-colors uppercase tracking-wider shadow-sm hover:shadow-md"
-            >
-                Back to Projects
-            </Link>
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider">
+              <Link href="/projects">Back to Projects</Link>
+            </Button>
         )}
       </div>
 
-      <div className="space-y-8 animate-fade-in-down">
+      <div className="space-y-8">
         
-        <div className="bg-white border border-gray-200 p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                <i className="fa-brands fa-github text-2xl text-black"></i>
-                <h3 className="text-lg font-bold text-black uppercase tracking-wide">GitHub Integration</h3>
+        <Card className="border-border bg-card p-8">
+            <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
+                <i className="fa-brands fa-github text-2xl text-foreground"></i>
+                <h3 className="text-lg font-bold text-foreground uppercase tracking-wide">GitHub Integration</h3>
             </div>
             
             <EditableInput 
@@ -112,12 +112,12 @@ function SettingsContent() {
                 placeholder="ghp_xxxxxxxxxxxx"
                 note={<>Required to verify repo ownership. Scopes needed: <span className="font-bold">repo, read:user</span></>}
             />
-        </div>
+        </Card>
 
-        <div className="bg-white border border-gray-200 p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                <i className="fa-brands fa-cloudflare text-2xl text-black"></i>
-                <h3 className="text-lg font-bold text-black uppercase tracking-wide">Cloudflare DNS</h3>
+        <Card className="border-border bg-card p-8">
+            <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
+                <i className="fa-brands fa-cloudflare text-2xl text-foreground"></i>
+                <h3 className="text-lg font-bold text-foreground uppercase tracking-wide">Cloudflare DNS</h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -140,7 +140,7 @@ function SettingsContent() {
                     />
                 </div>
             </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -148,7 +148,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
     return (
-        <Suspense fallback={<div className="p-8 text-center text-gray-400">Loading settings...</div>}>
+        <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading settings...</div>}>
             <SettingsContent />
         </Suspense>
     );

@@ -17,22 +17,24 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </head>
-      <body className="font-sans min-h-screen flex flex-col bg-slate-50 text-sky-900">
+      <body className="min-h-screen flex flex-col bg-background text-foreground antialiased dark">
         {!session ? (
-           children
+          children
         ) : (
           <>
             <TopBar />
-            <div className="flex flex-1 overflow-hidden h-[calc(100vh-4rem)] bg-white">
-              <aside className="w-[20%] h-full overflow-y-auto border-r border-sky-200">
+            <div className="flex flex-1 overflow-hidden h-[calc(100vh-4rem)] bg-background">
+              <aside className="w-64 border-r border-border overflow-y-auto bg-card">
                 <DashboardSidebar />
               </aside>
-              <main className="w-[80%] h-full overflow-y-auto bg-slate-50 p-10">
-                  {children}
+              <main className="flex-1 overflow-y-auto bg-background p-8">
+                {children}
               </main>
             </div>
           </>

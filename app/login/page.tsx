@@ -1,35 +1,37 @@
 import { signIn } from "@/auth"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 
 export default async function LoginPage() {
   const session = await auth()
   if (session) redirect("/")
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white border border-sky-200 shadow-lg">
-        <div className="bg-sky-50 border-b border-sky-200 p-4 flex justify-between items-center">
-          <div className="font-bold text-sky-900 tracking-tight uppercase flex items-baseline gap-1">
-            Nydus <span className="text-sky-500 text-xs">.arvo.team</span>
+    <div className="min-h-screen bg-background dark flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-border shadow-lg overflow-hidden">
+        <div className="bg-card border-b border-border p-4 flex justify-between items-center">
+          <div className="font-bold text-foreground tracking-tight uppercase flex items-baseline gap-1">
+            Nydus <span className="text-muted-foreground text-xs">.arvo.team</span>
           </div>
-          <div className="w-2 h-2 bg-sky-500 rounded-full animate-pulse"></div>
+          <i className="fa-solid fa-circle text-primary text-xs animate-pulse"></i>
         </div>
 
         <div className="p-8 flex flex-col gap-6">
           <div className="space-y-2">
-            <h1 className="text-xl text-center font-bold text-slate-900 uppercase tracking-wide font-mono">
+            <h1 className="text-xl text-center font-bold text-foreground uppercase tracking-wide">
               Authentication Required
             </h1>
-            <p className="text-sm text-center text-slate-600 font-mono">
+            <p className="text-sm text-center text-muted-foreground">
               Please login with your Discord account connected to Arvo.
             </p>
-            <p className="text-sm text-center text-slate-600 font-mono">
+            <p className="text-sm text-center text-muted-foreground">
               Nydus uses Discord accounts for authentication.
             </p>
           </div>
 
-          <div className="h-px w-full bg-sky-100"></div>
+          <div className="h-px w-full bg-border"></div>
 
           <form
             action={async () => {
@@ -38,15 +40,15 @@ export default async function LoginPage() {
             }}
             className="w-full"
           >
-            <button 
+            <Button 
               type="submit" 
-              className="cursor-pointer w-full bg-sky-900 text-white font-mono uppercase text-sm font-bold py-3 px-4 hover:bg-sky-800 transition-colors border border-sky-900 flex items-center justify-center gap-2"
+              className="cursor-pointer w-full bg-primary text-primary-foreground font-semibold uppercase text-sm py-5 hover:bg-primary/90"
             >
               <span>Authenticate via Discord</span>
-            </button>
+            </Button>
           </form>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

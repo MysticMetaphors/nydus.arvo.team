@@ -3,6 +3,13 @@
 import { useState, useEffect } from 'react';
 import { getProjects } from '@/app/actions/projects';
 import { getDNSRecords, createSubdomainRecord, deleteDNSRecord } from '@/app/actions/cloudflare';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert } from '@/components/ui/alert';
+import { Select } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // --- UI Components ---
 
@@ -23,11 +30,11 @@ const RippleButton = ({ children, onClick, className, disabled, variant = 'prima
         if (onClick) onClick(event);
     };
 
-    const baseStyle = "relative overflow-hidden transition-all duration-200 px-4 py-2 text-xs font-bold uppercase tracking-widest rounded-sm disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseStyle = "relative overflow-hidden transition-all duration-200 px-4 py-2 text-xs font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed";
     const variants: any = {
-        primary: "bg-black text-white hover:bg-sky-900",
-        danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200",
-        outline: "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+        primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+        danger: "bg-red-900/50 text-red-200 hover:bg-red-900/70 border border-red-700/50",
+        outline: "bg-secondary text-foreground border border-border hover:bg-border"
     };
 
     return (
@@ -151,35 +158,35 @@ export default function DNSPage() {
     };
 
     return (
-        <div className="space-y-8 max-w-6xl mx-auto font-sans pb-20">
+        <div className="space-y-8 max-w-6xl pb-20">
             {/* Header */}
-            <div className="pb-6 border-b border-gray-100">
-                <h1 className="text-3xl font-bold text-sky-900 uppercase tracking-tight">Cloudflare DNS Manager</h1>
-                <p className="text-sm text-gray-600 mt-2 font-medium">Manage subdomains and bind them to internal deployments</p>
+            <div className="pb-6 border-b border-border">
+                <h1 className="text-3xl font-bold text-foreground uppercase tracking-tight">Cloudflare DNS Manager</h1>
+                <p className="text-sm text-muted-foreground mt-2 font-medium">Manage subdomains and bind them to internal deployments</p>
             </div>
 
             {/* Create Section */}
-            <div className="bg-white border border-gray-200 p-6 shadow-sm rounded-sm">
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
-                    <i className="fa-solid fa-plus-circle mr-2 text-sky-600"></i>
+            <Card className="p-6 border-border bg-card">
+                <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4">
+                    <i className="fa-solid fa-plus-circle mr-2 text-primary"></i>
                     Bind New Subdomain
                 </h3>
 
                 {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded flex items-center">
+                    <Alert className="mb-4 bg-red-950/30 border-red-900/50 text-red-200 text-xs font-bold">
                         <i className="fa-solid fa-triangle-exclamation mr-2"></i>
                         {error}
-                    </div>
+                    </Alert>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                     {/* Project Selector */}
                     <div className="md:col-span-4">
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Select Project</label>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">Select Project</label>
                         <select 
                             value={selectedProject} 
                             onChange={handleProjectSelect}
-                            className="w-full bg-gray-50 border border-gray-300 text-sm rounded-sm p-2.5 focus:ring-sky-500 focus:border-sky-500 outline-none transition-all"
+                            className="w-full bg-secondary border border-border text-foreground text-sm p-2 focus:ring-primary focus:border-primary outline-none transition-all"
                         >
                             <option value="">-- Choose a Repository --</option>
                             {projects.map((p) => (
@@ -191,20 +198,20 @@ export default function DNSPage() {
                     </div>
 
                     {/* Subdomain Input (Conditional) */}
-                    <div className={`md:col-span-6 transition-all duration-300 ${selectedProject ? 'opacity-100' : 'opacity-50 pointer-events-none grayscale'}`}>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                    <div className={`md:col-span-6 transition-all duration-300 ${selectedProject ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
                             Assigned Subdomain 
-                            {!isValidSubdomain(subdomain) && subdomain.length > 0 && <span className="text-red-500 ml-2 normal-case italic">(Invalid format)</span>}
+                            {!isValidSubdomain(subdomain) && subdomain.length > 0 && <span className="text-red-400 ml-2 normal-case italic">(Invalid format)</span>}
                         </label>
                         <div className="flex">
-                            <input 
+                            <Input 
                                 type="text" 
                                 value={subdomain}
                                 onChange={(e) => setSubdomain(e.target.value.toLowerCase().trim())}
                                 placeholder="project-name"
-                                className="flex-1 bg-white border border-gray-300 border-r-0 text-sm rounded-l-sm p-2.5 focus:ring-sky-500 focus:border-sky-500 outline-none text-right font-mono"
+                                className="flex-1 bg-background border-r-0 text-right font-mono border-border"
                             />
-                            <span className="bg-gray-100 border border-gray-300 text-gray-500 text-sm font-mono p-2.5 rounded-r-sm select-none">
+                            <span className="bg-secondary border border-l-0 border-border text-muted-foreground text-sm font-mono p-2 select-none">
                                 .arvo.team
                             </span>
                         </div>
@@ -215,82 +222,80 @@ export default function DNSPage() {
                         <RippleButton 
                             onClick={handleCreate} 
                             disabled={!selectedProject || !subdomain || creating}
-                            className="w-full h-[42px] flex items-center justify-center"
+                            className="w-full h-10 flex items-center justify-center"
                         >
                             {creating ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Bind Record'}
                         </RippleButton>
                     </div>
                 </div>
-            </div>
+            </Card>
 
             {/* List Section */}
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                    <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">
                         Active Records
                     </h3>
                     <div className="flex gap-2">
-                         <input 
+                         <Input 
                             type="text" 
                             placeholder="Search records..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-white border border-gray-300 text-xs rounded-sm px-3 py-1.5 focus:border-sky-500 outline-none w-64"
+                            className="bg-card border-border text-foreground w-64 text-xs"
                         />
                     </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 shadow-sm overflow-hidden rounded-sm">
+                <Card className="border-border bg-card overflow-hidden">
                     {loading && records.length === 0 ? (
-                        <div className="p-8 text-center text-gray-400 text-sm">Loading DNS records...</div>
+                        <div className="p-8 text-center text-muted-foreground text-sm">Loading DNS records...</div>
                     ) : (
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs tracking-wider w-24">Type</th>
-                                    <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs tracking-wider">Name</th>
-                                    <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs tracking-wider">Content</th>
-                                    <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs tracking-wider w-32">Proxy</th>
-                                    <th className="px-6 py-3 font-bold text-gray-500 uppercase text-xs tracking-wider w-24 text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
+                        <Table>
+                            <TableHeader className="bg-secondary border-b border-border">
+                                <TableRow className="border-border">
+                                    <TableHead className="font-bold text-foreground uppercase text-xs w-24">Type</TableHead>
+                                    <TableHead className="font-bold text-foreground uppercase text-xs">Name</TableHead>
+                                    <TableHead className="font-bold text-foreground uppercase text-xs">Content</TableHead>
+                                    <TableHead className="font-bold text-foreground uppercase text-xs w-32">Proxy</TableHead>
+                                    <TableHead className="font-bold text-foreground uppercase text-xs w-24 text-right">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {records.map((record: any) => (
-                                    <tr key={record.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold
-                                                ${record.type === 'A' ? 'bg-blue-100 text-blue-800' : 
-                                                  record.type === 'CNAME' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'}`}>
+                                    <TableRow key={record.id} className="border-border hover:bg-secondary transition-colors">
+                                        <TableCell>
+                                            <Badge variant={record.type === 'A' ? 'default' : 'secondary'} className="text-xs font-bold">
                                                 {record.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 font-mono text-gray-800">{record.name}</td>
-                                        <td className="px-6 py-4 font-mono text-gray-500 text-xs">{record.content}</td>
-                                        <td className="px-6 py-4">
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-foreground">{record.name}</TableCell>
+                                        <TableCell className="font-mono text-muted-foreground text-xs">{record.content}</TableCell>
+                                        <TableCell>
                                             {record.proxied ? (
-                                                <span className="text-orange-500 font-bold text-xs"><i className="fa-solid fa-cloud"></i> Proxied</span>
+                                                <span className="text-primary font-bold text-xs"><i className="fa-solid fa-cloud"></i> Proxied</span>
                                             ) : (
-                                                <span className="text-gray-400 text-xs"><i className="fa-solid fa-cloud"></i> DNS Only</span>
+                                                <span className="text-muted-foreground text-xs"><i className="fa-solid fa-cloud"></i> DNS Only</span>
                                             )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
+                                        </TableCell>
+                                        <TableCell className="text-right">
                                             <RippleButton variant="danger" onClick={() => handleDelete(record.id)} className="px-3 py-1 text-[10px]">
                                                 Delete
                                             </RippleButton>
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
                                 {records.length === 0 && !loading && (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-gray-400 italic">
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="px-6 py-8 text-center text-muted-foreground italic">
                                             No DNS records found matching your criteria.
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 )}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     )}
-                </div>
+                </Card>
 
                 {/* Pagination */}
                 <div className="flex justify-center gap-2 mt-4">
@@ -301,7 +306,7 @@ export default function DNSPage() {
                     >
                         Previous
                     </RippleButton>
-                    <span className="px-4 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200">
+                    <span className="px-4 py-2 text-sm font-bold text-foreground bg-secondary border border-border">
                         Page {page}
                     </span>
                     <RippleButton 
