@@ -65,7 +65,7 @@ export default function DashboardSidebar() {
   ]
 
   return (
-    <nav className="h-full bg-card flex flex-col py-6 px-3">
+    <nav className="h-full bg-card flex flex-col py-6 px-3 gap-6">
       <div className="flex flex-col gap-2">
         {navItems.map((item) => {
           const isActive = pathname === item.path
@@ -77,36 +77,38 @@ export default function DashboardSidebar() {
               className={cn(
                 "justify-start gap-3 h-9 px-3 transition-colors duration-200",
                 isActive 
-                  ? "bg-primary text-primary-foreground font-semibold" 
+                  ? "bg-secondary text-primary-foreground font-semibold hover:bg-secondary cursor-default" 
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
-              <Link href={item.path}>
+              <Link href={item.path} className="flex items-center w-full">
                 <i className={`fa-solid ${item.icon} w-4 text-center`}></i>
-                <span className="text-sm font-medium">{item.name}</span>
+                <span className="text-sm font-medium flex-1">{item.name}</span>
+                {isActive && (
+                  <div className="relative flex h-2 w-2 ml-auto">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/50 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </div>
+                )}
               </Link>
             </Button>
           )
         })}
       </div>
       
-      <div className="mt-auto pt-6">
-        <div className="bg-secondary border border-border p-4 space-y-4">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            System Resources
-          </div>
-          
-          <UsageMiniStats />
-
-          <div className="flex items-center gap-2 pt-3 border-t border-border">
+      <div className="pt-2">
+        <div className="border border-border p-4 space-y-4 rounded-sm">
+          <div className="flex items-center gap-2">
             <div className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/50 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </div>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              <i className="fa-solid fa-wifi text-xs"></i> Live
+              Live System Resources
             </span>
           </div>
+          
+          <UsageMiniStats />
         </div>
       </div>
     </nav>

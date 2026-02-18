@@ -72,3 +72,39 @@ export async function deleteDNSRecord(recordId: string) {
         return { success: false, error: error.message };
     }
 }
+
+export async function getCloudflareAnalytics(days: number = 30) {
+    const BOT_API_URL = process.env.BOT_API_URL;
+    
+    try {
+        const res = await fetch(`${BOT_API_URL}/cloudflare/dynamic-analytics?days=${days}`, { 
+            cache: 'no-store',
+            signal: AbortSignal.timeout(8000)
+        });
+        
+        if (!res.ok) {
+            const text = await res.text();
+            console.error(`[Next.js Action] API Error (${res.status}): ${text}`);
+            return { data: [], granularity: 'unknown' };
+        }
+        
+        const result = await res.json();
+        return {
+            data: result.data || [],
+            granularity: result.granularity || (days <= 3 ? 'hourly' : 'daily')
+        };
+
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            if (error.name === 'AbortError') {
+                console.error(`[Next.js Action] Fetch timeout after 8s`);
+            } else {
+                console.error(`[Next.js Action] CRITICAL FETCH ERROR: ${error.message}`);
+            }
+        } else {
+            console.error(`[Next.js Action] UNKNOWN ERROR TYPE:`, error);
+        }
+        
+        return { data: [], granularity: 'error' };
+    }
+}
