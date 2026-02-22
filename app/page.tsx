@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { getCloudflareAnalytics } from "@/app/actions/cloudflare"
-import { formatDate } from "@/lib/utils"
+import { formatDate as formatDateUtil } from "@/lib/utils"
 
 const chartConfig = {
   visitors: { label: "Visitors", color: "var(--primary)" },
@@ -44,16 +44,19 @@ function DashboardContent() {
   const [granularity, setGranularity] = React.useState("daily")
   const [loading, setLoading] = React.useState(true)
 
+  const countriesChartRef = React.useRef<HTMLDivElement>(null);
+  const [countriesChartWidth, setCountriesChartWidth] = React.useState(0);
+  const browsersChartRef = React.useRef<HTMLDivElement>(null)
+  const [browsersChartWidth, setBrowsersChartWidth] = React.useState(0)
+  const osChartRef = React.useRef<HTMLDivElement>(null)
+  const [osChartWidth, setOsChartWidth] = React.useState(0)
+
   React.useEffect(() => {
-    setLoading(false)
     async function fetchData() {
       setLoading(true)
       try {
         const response = await getCloudflareAnalytics(Number(range))
         if (response && response.data) {
-          response.data.forEach((item: any) => {
-            item.timestamp = formatDate(item.timestamp)
-          })
           setData(response.data)
           setGranularity(response.granularity)
         }
@@ -66,46 +69,118 @@ function DashboardContent() {
     fetchData()
   }, [range])
 
-  const aggregateBarData = (key: string) => {
+  React.useEffect(() => {
+    if (!countriesChartRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        setCountriesChartWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(countriesChartRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  React.useEffect(() => {
+    if (!browsersChartRef.current) return
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        setBrowsersChartWidth(entry.contentRect.width)
+      }
+    })
+    observer.observe(browsersChartRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  React.useEffect(() => {
+    if (!osChartRef.current) return
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        setOsChartWidth(entry.contentRect.width)
+      }
+    })
+    observer.observe(osChartRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  // Memoized aggregations
+  const totalVisitors = React.useMemo(
+    () => data.reduce((acc, curr) => acc + (curr.visitors || 0), 0),
+    [data]
+  )
+
+  const deviceData = React.useMemo(() => {
+    const totals: Record<string, number> = {}
+    data.forEach(d => {
+      if (d.devices) {
+        Object.entries(d.devices).forEach(([type, count]) => {
+          const key = type.toLowerCase()
+          totals[key] = (totals[key] || 0) + (count as number)
+        })
+      }
+    })
+    return [
+      { browser: "desktop", visitors: totals.desktop || 0, fill: "var(--primary)" },
+      { browser: "mobile", visitors: totals.mobile || 0, fill: "var(--destructive)" },
+      { browser: "tablet", visitors: totals.tablet || 0, fill: "var(--muted)" },
+    ].filter(d => d.visitors > 0)
+  }, [data])
+
+  const countriesData = React.useMemo(() => {
     const counts: Record<string, number> = {}
     data.forEach(item => {
-      const source = item[key] || {}
+      const source = item.countries || {}
       Object.entries(source).forEach(([name, value]) => {
         counts[name] = (counts[name] || 0) + (value as number)
       })
     })
     return Object.entries(counts)
-      .map(([name, value]) => ({
-        label: name,
-        visitors: value,
-      }))
+      .map(([name, value]) => ({ label: name, visitors: value }))
+      .filter(item => item.visitors > 0)
       .sort((a, b) => b.visitors - a.visitors)
-  }
-
-  const deviceData = React.useMemo(() => {
-    const totals = { desktop: 0, mobile: 0, tablet: 0 }
-    data.forEach(d => {
-      if (d.devices) {
-        totals.desktop += (d.devices.desktop || 0)
-        totals.mobile += (d.devices.mobile || 0)
-        totals.tablet += (d.devices.tablet || 0)
-      }
-    })
-    return [
-      { browser: "desktop", visitors: totals.desktop, fill: "var(--primary)" },
-      { browser: "mobile", visitors: totals.mobile, fill: "var(--chart-2)" },
-      { browser: "tablet", visitors: totals.tablet, fill: "var(--chart-3)" },
-    ].filter(d => d.visitors > 0)
   }, [data])
 
-  const formatDate = (value: string) => {
-    const date = new Date(value)
-    return granularity === "hourly"
-      ? date.toLocaleTimeString("en-US", { hour: "numeric" })
-      : date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-  }
+  const browsersData = React.useMemo(() => {
+    const counts: Record<string, number> = {}
+    data.forEach(item => {
+      const source = item.browsers || {}
+      Object.entries(source).forEach(([name, value]) => {
+        counts[name] = (counts[name] || 0) + (value as number)
+      })
+    })
+    return Object.entries(counts)
+      .map(([name, value]) => ({ label: name, visitors: value }))
+      .filter(item => item.visitors > 0)
+      .sort((a, b) => b.visitors - a.visitors)
+  }, [data])
 
-  const totalVisitors = React.useMemo(() => data.reduce((acc, curr) => acc + (curr.visitors || 0), 0), [data])
+  const osData = React.useMemo(() => {
+    const counts: Record<string, number> = {}
+    data.forEach(item => {
+      const source = item.os || {}
+      Object.entries(source).forEach(([name, value]) => {
+        counts[name] = (counts[name] || 0) + (value as number)
+      })
+    })
+    return Object.entries(counts)
+      .map(([name, value]) => ({ label: name, visitors: value }))
+      .filter(item => item.visitors > 0)
+      .sort((a, b) => b.visitors - a.visitors)
+  }, [data])
+
+  const formatDate = React.useCallback(
+    (value: string) => {
+      if (!value) return ""
+      const date = new Date(value)
+      if (granularity === "hourly") {
+        return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+      } else if (granularity === "4hourly") {
+        return date.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric" })
+      } else {
+        return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      }
+    },
+    [granularity]
+  )
 
   return (
     <div className="w-full space-y-8">
@@ -116,28 +191,20 @@ function DashboardContent() {
             <SelectValue placeholder="Select Range" />
           </SelectTrigger>
           <SelectContent className="bg-popover border-border text-popover-foreground">
-            <SelectItem
-              value="1"
-              className="focus:bg-secondary focus:text-primary-foreground cursor-pointer"
-            >
+            <SelectItem value="1" className="focus:bg-secondary focus:text-primary-foreground cursor-pointer">
               Last 24 Hours
             </SelectItem>
-            <SelectItem
-              value="7"
-              className="focus:bg-secondary focus:text-primary-foreground cursor-pointer"
-            >
-              Last 7 Days
+            <SelectItem value="3" className="focus:bg-secondary focus:text-primary-foreground cursor-pointer">
+              Last 3 Days
             </SelectItem>
-            <SelectItem
-              value="30"
-              className="focus:bg-secondary focus:text-primary-foreground cursor-pointer"
-            >
-              Last 30 Days
+            <SelectItem value="7" className="focus:bg-secondary focus:text-primary-foreground cursor-pointer">
+              Last 7 Days
             </SelectItem>
           </SelectContent>
         </Select>
       </div>
 
+      {/* Unique Visitors Chart */}
       <Card className="bg-transparent border-zinc-800 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div className="grid gap-1">
@@ -169,22 +236,15 @@ function DashboardContent() {
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-              >
-                {/* <Label
-                  value="Visitors"
-                  angle={-90}
-                  position="insideLeft"
-                  style={{ textAnchor: "middle", fill: "var(--muted-foreground)", fontSize: 12, fontWeight: 500 }}
-                /> */}
-              </YAxis>
-              <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+              />
+              <ChartTooltip content={<ChartTooltipContent indicator="line" labelFormatter={formatDate} />} />
               <Area
                 dataKey="visitors"
                 type="monotone"
                 fill="var(--primary)"
                 fillOpacity={0.15}
                 stroke="var(--primary)"
-                strokeWidth={1}
+                strokeWidth={2}
                 activeDot={{ r: 6, strokeWidth: 0, fill: "var(--primary)" }}
               />
             </AreaChart>
@@ -192,7 +252,9 @@ function DashboardContent() {
         </CardContent>
       </Card>
 
+      {/* Device Distribution & Top Countries */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Device Distribution Pie */}
         <Card className="bg-transparent border-zinc-800">
           <CardHeader className="pb-0">
             <CardTitle className="text-white text-center">Device Distribution</CardTitle>
@@ -213,11 +275,10 @@ function DashboardContent() {
                   {deviceData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={index === 0 ? "#0f9" : "#18181b"}
+                      fill={entry.fill}
                       className="hover:opacity-80 transition-opacity cursor-pointer"
                     />
                   ))}
-
                   <Label
                     content={({ viewBox }) => {
                       if (viewBox && "cx" in viewBox && "cy" in viewBox) {
@@ -237,100 +298,180 @@ function DashboardContent() {
                 </Pie>
               </PieChart>
             </ChartContainer>
-
             <div className="flex flex-wrap justify-center gap-4 mt-4">
-              {deviceData.map((entry, index) => (
+              {deviceData.map((entry) => (
                 <div key={entry.browser} className="flex items-center gap-2">
-                  <div
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: index === 0 ? "#0f9" : "#27272a" }}
-                  />
-                  <span className="text-[10px] uppercase font-bold text-zinc-400">
-                    {entry.browser}
-                  </span>
+                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.fill }} />
+                  <span className="text-[10px] uppercase font-bold text-zinc-400">{entry.browser}</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
+
+        {/* Top Countries */}
         <Card className="bg-transparent border-zinc-800 w-full min-w-0">
-          <CardHeader><CardTitle className="text-white">Top Countries</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-white">Top Countries</CardTitle>
+          </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[250px] w-full">
-              <BarChart data={aggregateBarData("countries")} layout="vertical" margin={{ left: 0, right: 60 }}>
-                <YAxis dataKey="label" type="category" hide />
-                <XAxis type="number" hide />
-                <Bar dataKey="visitors" fill="var(--primary)" radius={4}>
-                  <LabelList dataKey="label" position="insideLeft" className="fill-black font-bold" fontSize={14}/>
-                  <LabelList dataKey="visitors" position="right" className="fill-zinc-400" fontSize={14}/>
-                </Bar>
-              </BarChart>
-            </ChartContainer>
+            <div ref={countriesChartRef}>
+              <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                <BarChart data={countriesData} layout="vertical" margin={{ left: 0, right: 60 }}>
+                  <YAxis dataKey="label" type="category" hide />
+                  <XAxis type="number" hide />
+                  <Bar barSize={24} dataKey="visitors" fill="var(--secondary)" radius={4}>
+                    <LabelList dataKey="label" position="insideLeft" className="fill-primary font-semibold" fontSize={14} />
+                    <LabelList
+                      dataKey="visitors"
+                      content={({ y, height, value }) => {
+                        const numericY = typeof y === 'string' ? parseFloat(y) : (typeof y === 'number' ? y : 0);
+                        const numericHeight = typeof height === 'string' ? parseFloat(height) : (typeof height === 'number' ? height : 0);
+                        const centerY = numericY + numericHeight / 2;
+                        const rightEdgeX = (countriesChartWidth || 0) - 30;
+                        return (
+                          <text
+                            x={rightEdgeX}
+                            y={centerY}
+                            dominantBaseline="middle"
+                            textAnchor="end"
+                            fill="white"
+                            fontSize={14}
+                            className="fill-zinc-400 font-bold"
+                          >
+                            {value}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Bandwidth Chart */}
       <Card className="bg-transparent border-zinc-800">
-        <CardHeader><div className="grid gap-1">
+        <CardHeader>
+          <div className="grid gap-1">
             <CardTitle className="text-base font-medium text-white">Bandwidth</CardTitle>
-            <CardDescription className="text-zinc-400">
-              In gigabytes (GB)
-            </CardDescription>
+            <CardDescription className="text-zinc-400">In gigabytes (GB)</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="aspect-auto h-[300px] w-full">
             <AreaChart data={data} margin={{ left: -40, right: 20, top: 20, bottom: 20 }}>
               <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="timestamp" tickFormatter={formatDate} tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
+              <XAxis
+                dataKey="timestamp"
+                tickFormatter={formatDate}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+              />
               <YAxis
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-              >
-                {/* <Label
-                  value="Gigabytes"
-                  angle={-90}
-                  position="insideLeft"
-                  style={{ textAnchor: "middle", fill: "var(--muted-foreground)", fontSize: 12, fontWeight: 500 }}
-                /> */}
-              </YAxis>
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Area dataKey="bandwidth_gb" type="monotone" fill="transparent" stroke="var(--primary)" strokeWidth={1} />
+              />
+              <ChartTooltip content={<ChartTooltipContent labelFormatter={formatDate} />} />
+              <Area
+                dataKey="bandwidth_gb"
+                type="monotone"
+                fill="transparent"
+                stroke="var(--primary)"
+                strokeWidth={2}
+              />
             </AreaChart>
           </ChartContainer>
         </CardContent>
       </Card>
 
+      {/* Browsers & Operating Systems */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
+        {/* Top Browsers */}
         <Card className="bg-transparent border-zinc-800 w-full min-w-0">
-          <CardHeader><CardTitle className="text-white">Top Countries</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-white">Top Browsers</CardTitle>
+          </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[250px] w-full">
-              <BarChart data={aggregateBarData("browsers")} layout="vertical" margin={{ left: 0, right: 60 }}>
-                <YAxis dataKey="label" type="category" hide />
-                <XAxis type="number" hide />
-                <Bar dataKey="visitors" fill="var(--primary)" radius={4}>
-                  <LabelList dataKey="label" position="insideLeft" className="fill-black font-bold" fontSize={14}/>
-                  <LabelList dataKey="visitors" position="right" className="fill-zinc-400" fontSize={14}/>
-                </Bar>
-              </BarChart>
-            </ChartContainer>
+            <div ref={browsersChartRef}>
+              <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                <BarChart data={browsersData} layout="vertical" margin={{ left: 0, right: 80 }}>
+                  <YAxis dataKey="label" type="category" hide />
+                  <XAxis type="number" hide />
+                  <Bar barSize={24} dataKey="visitors" fill="var(--secondary)" radius={4}>
+                    <LabelList dataKey="label" position="insideLeft" className="fill-primary font-semibold" fontSize={14} />
+                    <LabelList
+                      dataKey="visitors"
+                      content={({ y, height, value }) => {
+                        const numericY = typeof y === 'string' ? parseFloat(y) : (typeof y === 'number' ? y : 0);
+                        const numericHeight = typeof height === 'string' ? parseFloat(height) : (typeof height === 'number' ? height : 0);
+                        const centerY = numericY + numericHeight / 2;
+                        const rightEdgeX = (browsersChartWidth || 0) - 30;
+                        return (
+                          <text
+                            x={rightEdgeX}
+                            y={centerY}
+                            dominantBaseline="middle"
+                            textAnchor="end"
+                            fill="white"
+                            fontSize={14}
+                            className="fill-zinc-400 font-bold"
+                          >
+                            {value}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
+
+        {/* Top Operating Systems */}
         <Card className="bg-transparent border-zinc-800 w-full min-w-0">
-          <CardHeader><CardTitle className="text-white">Top Countries</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-white">Top Operating Systems</CardTitle>
+          </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[250px] w-full">
-              <BarChart data={aggregateBarData("os")} layout="vertical" margin={{ left: 0, right: 60 }}>
-                <YAxis dataKey="label" type="category" hide />
-                <XAxis type="number" hide />
-                <Bar dataKey="visitors" fill="var(--primary)" radius={4}>
-                  <LabelList dataKey="label" position="insideLeft" className="fill-black font-bold" fontSize={14}/>
-                  <LabelList dataKey="visitors" position="right" className="fill-zinc-400" fontSize={14}/>
-                </Bar>
-              </BarChart>
-            </ChartContainer>
+            <div ref={osChartRef}>
+              <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                <BarChart data={osData} layout="vertical" margin={{ left: 0, right: 80 }} barCategoryGap={4}>
+                  <YAxis dataKey="label" type="category" hide />
+                  <XAxis type="number" hide />
+                  <Bar barSize={32} dataKey="visitors" fill="var(--secondary)" radius={4}>
+                    <LabelList dataKey="label" position="insideLeft" className="fill-primary font-semibold" fontSize={14} />
+                    <LabelList
+                      dataKey="visitors"
+                      content={({ y, height, value }) => {
+                        const numericY = typeof y === 'string' ? parseFloat(y) : (typeof y === 'number' ? y : 0);
+                        const numericHeight = typeof height === 'string' ? parseFloat(height) : (typeof height === 'number' ? height : 0);
+                        const centerY = numericY + numericHeight / 2;
+                        const rightEdgeX = (osChartWidth || 0) - 30;
+                        return (
+                          <text
+                            x={rightEdgeX}
+                            y={centerY}
+                            dominantBaseline="middle"
+                            textAnchor="end"
+                            fill="white"
+                            fontSize={14}
+                            className="fill-zinc-400 font-bold"
+                          >
+                            {value}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       </div>

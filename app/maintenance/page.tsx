@@ -194,12 +194,12 @@ const ServiceSection = ({
                 <RippleButton
                     disabled={isProcessing}
                     onClick={handleRestart}
-                    className={`w-full sm:w-auto px-6 py-3 text-xs font-bold uppercase tracking-widest
+                    className={`cursor-pointer w-[192px] px-6 py-3 text-xs font-bold uppercase tracking-widest border
                         ${isProcessing
-                            ? 'bg-secondary text-muted-foreground'
-                            : 'bg-primary text-primary-foreground'}`}
+                            ? 'bg-secondary text-muted-foreground border-secondary'
+                            : 'bg-green-500/10 border-green-500 text-green-500 hover:bg-green'}`}
                 >
-                    {isProcessing ? 'Syncing...' : 'Restart & Update'}
+                    {isProcessing ? 'Syncing...' : 'Pull Updates'}
                 </RippleButton>
             </div>
 

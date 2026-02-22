@@ -37,7 +37,7 @@ export async function GET(
     (async () => {
         try {
             const botRes = await fetchWithAuth(`/maintenance/restart/${service}`);
-            if (!botRes.body) throw new Error('No response body from Bot');
+            if (!botRes.body) throw new Error('No response body from Nydus Tunnel');
 
             const reader = botRes.body.getReader();
             while (true) {

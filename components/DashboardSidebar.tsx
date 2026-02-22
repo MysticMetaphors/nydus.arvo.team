@@ -9,16 +9,61 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useSidebar } from '@/context/SidebarContext'
 
+function StatBar({ label, value, avg, detail, type, showAvg = false }: { label: string, value: number, avg: number, detail: string, type: string, showAvg?: boolean }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between items-baseline leading-none">
+        <div className="flex gap-1.5 items-baseline">
+          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">{label}</span>
+          <span className="text-[9px] text-muted-foreground/70 font-medium">{detail}</span>
+        </div>
+        <span className={cn("text-[10px] font-bold", value > 85 ? "text-red-500" : "text-primary")}>
+          {value.toFixed(2)}%
+        </span>
+      </div>
+      <div className="relative h-2 flex items-center">
+        <Progress value={value} className="h-1 w-full" />
+        {showAvg && (
+          <div 
+            className="absolute w-1.5 h-3 bg-yellow-400/40 border border-yellow-500/50 rounded-sm z-10 transition-all duration-700 ease-in-out cursor-help"
+            style={{ left: `${avg}%`, transform: 'translateX(-50%)' }}
+            title={`${type} Baseline Average: ${avg.toFixed(2)}%`}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
 function UsageMiniStats() {
-  const [stats, setStats] = useState({ cpu: 0, ram: 0 })
+  const [stats, setStats] = useState({ 
+    cpu: 0, 
+    ram_p: 0, ram_u: 0, ram_t: 0,
+    disk_p: 0, disk_u: 0, disk_t: 0,
+    i_p: 0, i_u: 0, i_t: 0,
+    avgCpu: 0, avgRam: 0
+  })
+
+  const formatGB = (bytes: number) => (bytes / (1024 ** 3)).toFixed(1)
+  const formatInodes = (num: number) => num > 1000 ? (num / 1000).toFixed(1) + 'k' : num
 
   useEffect(() => {
     const fetchStats = async () => {
       const data = await getLiveStats()
-      if (data && data.length > 0) {
+      if (data) {
         setStats({
-          cpu: data[0].cpu_percent,
-          ram: data[0].ram_percent
+          cpu: data.cpu || 0,
+          ram_p: data.ram_percent || 0,
+          ram_u: (data.ram_total - data.ram_remaining) || 0,
+          ram_t: data.ram_total || 0,
+          disk_p: data.disk_percent || 0,
+          disk_u: (data.disk_total - data.disk_remaining) || 0,
+          disk_t: data.disk_total || 0,
+          i_p: data.inodes_total > 0 ? (data.inodes_used / data.inodes_total) * 100 : 0,
+          i_u: data.inodes_used || 0,
+          i_t: data.inodes_total || 0,
+          avgCpu: data.avg_cpu || 0,
+          avgRam: data.avg_ram || 0
         })
       }
     }
@@ -29,26 +74,39 @@ function UsageMiniStats() {
   }, [])
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs tracking-tighter">
-          <span className="text-muted-foreground uppercase font-semibold">CPU</span>
-          <span className={cn("font-bold", stats.cpu > 85 ? "text-red-500" : "text-primary")}>
-            {stats.cpu}%
-          </span>
-        </div>
-        <Progress value={stats.cpu} className="h-1" />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs tracking-tighter">
-          <span className="text-muted-foreground uppercase font-semibold">Memory</span>
-          <span className={cn("font-bold", stats.ram > 85 ? "text-red-500" : "text-primary")}>
-            {stats.ram}%
-          </span>
-        </div>
-        <Progress value={stats.ram} className="h-1" />
-      </div>
+    <div className="space-y-3">
+      <StatBar 
+        label="CPU" 
+        type="CPU"
+        value={stats.cpu} 
+        avg={stats.avgCpu} 
+        detail={`avg ${stats.avgCpu.toFixed(2)}%`}
+        showAvg={true}
+      />
+      <StatBar 
+        label="RAM" 
+        type="Memory"
+        value={stats.ram_p} 
+        avg={stats.avgRam} 
+        detail={`${formatGB(stats.ram_u)}/${formatGB(stats.ram_t)}GB`}
+        showAvg={true}
+      />
+      <StatBar 
+        label="DSK" 
+        type="Disk"
+        value={stats.disk_p} 
+        avg={0} 
+        detail={`${formatGB(stats.disk_u)}/${formatGB(stats.disk_t)}GB`}
+        showAvg={false}
+      />
+      <StatBar 
+        label="IND" 
+        type="Inodes"
+        value={stats.i_p} 
+        avg={0} 
+        detail={`${formatInodes(stats.i_u)}/${formatInodes(stats.i_t)}`}
+        showAvg={false}
+      />
     </div>
   )
 }

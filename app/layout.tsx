@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import TopBar from "@/components/TopBar";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { SidebarProvider } from "@/context/SidebarContext";
+import { agaleFont } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "Nydus | Arvo",
@@ -18,7 +19,7 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="en" className="dark h-full">
+    <html lang="en" className={`${agaleFont.variable} dark h-full`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" />
