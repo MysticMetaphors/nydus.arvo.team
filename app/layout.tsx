@@ -4,11 +4,13 @@ import { auth } from "@/auth";
 import TopBar from "@/components/TopBar";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { SidebarProvider } from "@/context/SidebarContext";
+import { NavigationProvider } from "@/context/NavigationContext";
+import MainContent from "@/components/MainContent";
 import { agaleFont } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "Nydus | Arvo",
-  description: "Arvo's Deployment Manager",
+  description: "Arvo's Internal Developer Platform",
 };
 
 export default async function RootLayout({
@@ -31,7 +33,7 @@ export default async function RootLayout({
             {children}
           </div>
         ) : (
-          <>
+          <NavigationProvider>
             <SidebarProvider>
               <div className="flex flex-col h-screen overflow-hidden bg-background">
                 <div className="flex-none">
@@ -40,14 +42,13 @@ export default async function RootLayout({
 
                 <div className="flex flex-1 overflow-hidden relative">
                   <DashboardSidebar />
-                  <main className="flex-1 overflow-y-auto p-8 w-full overflow-x-hidden">
+                  <MainContent>
                     {children}
-                  </main>
+                  </MainContent>
                 </div>
-
               </div>
             </SidebarProvider>
-          </>
+          </NavigationProvider>
         )}
       </body>
     </html>

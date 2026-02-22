@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getLiveStats } from '@/app/actions/stats'
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useSidebar } from '@/context/SidebarContext'
+import { useNavigation } from '@/context/NavigationContext';
 
 function StatBar({ label, value, avg, detail, type, showAvg = false }: { label: string, value: number, avg: number, detail: string, type: string, showAvg?: boolean }) {
   return (
@@ -112,52 +113,108 @@ function UsageMiniStats() {
 }
 
 export default function DashboardSidebar() {
-  const { isOpen } = useSidebar()
-  const pathname = usePathname()
+  const { isOpen } = useSidebar();
+  const pathname = usePathname();
+  const { activePath, pendingPath, navigate } = useNavigation();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showTopFade, setShowTopFade] = useState(false);
+  const [showBottomFade, setShowBottomFade] = useState(false);
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: 'fa-chart-line' },
     { name: 'Projects', path: '/projects', icon: 'fa-network-wired' },
     { name: 'Deployments', path: '/deployments', icon: 'fa-rocket' },
     { name: 'Maintenance', path: '/maintenance', icon: 'fa-screwdriver-wrench' },
-    { name: 'Cloudflare', path: '/cloudflare', icon: 'fa-cloud' },
+    { name: 'Databases', path: '/databases', icon: 'fa-database' },
+    { name: 'Cloudflare', path: '/cloudflare', icon: 'fa-brands fa-cloudflare' },
+    { name: 'Users', path: '/users', icon: 'fa-users' },
+    { name: 'AI Integrations', path: '/ai', icon: 'fa-brands fa-android' },
     { name: 'Settings', path: '/settings', icon: 'fa-cogs' },
   ]
 
+  // Update fades based on scroll position
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      setShowTopFade(scrollTop > 5);
+      setShowBottomFade(scrollTop + clientHeight < scrollHeight - 5);
+    };
+
+    handleScroll(); // check initial state
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const NavLink = ({ item }: { item: typeof navItems[0] }) => {
+    const isActive = activePath === item.path;
+    const isPendingThis = pendingPath === item.path;
+
+    const handleClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      navigate(item.path);
+    };
+
+    return (
+      <Button
+        asChild
+        variant="ghost"
+        className={cn(
+          "justify-start gap-3 h-9 px-3 transition-colors duration-200",
+          isActive
+            ? "bg-secondary text-primary-foreground font-semibold hover:bg-secondary cursor-default"
+            : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+        )}
+      >
+        <Link href={item.path} onClick={handleClick} className="flex items-center w-full">
+          <i className={`fa-solid ${item.icon} w-4 text-center`}></i>
+          <span className="text-sm font-medium flex-1">{item.name}</span>
+          {isPendingThis && (
+            <i className="fa-solid fa-spinner fa-spin-pulse text-xs ml-auto"></i>
+          )}
+          {isActive && !isPendingThis && (
+            <div className="relative flex h-2 w-2 ml-auto">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/50 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </div>
+          )}
+        </Link>
+      </Button>
+    );
+  };
+
   return (
     <aside className={`absolute top-0 left-0 z-40 h-full w-64 border-r border-border bg-card transition-transform duration-200 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full"} md:static md:translate-x-0`}>
-      <nav className="h-full flex flex-col py-6 px-3 gap-6 overflow-y-auto">
-        <div className="flex flex-col gap-2">
-          {navItems.map((item) => {
-            const isActive = pathname === item.path
-            return (
-              <Button
-                key={item.path}
-                asChild
-                variant="ghost"
-                className={cn(
-                  "justify-start gap-3 h-9 px-3 transition-colors duration-200",
-                  isActive
-                    ? "bg-secondary text-primary-foreground font-semibold hover:bg-secondary cursor-default"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                )}
-              >
-                <Link href={item.path} className="flex items-center w-full">
-                  <i className={`fa-solid ${item.icon} w-4 text-center`}></i>
-                  <span className="text-sm font-medium flex-1">{item.name}</span>
-                  {isActive && (
-                    <div className="relative flex h-2 w-2 ml-auto">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/50 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                    </div>
-                  )}
-                </Link>
-              </Button>
-            )
-          })}
+      {/* Use flex column to separate scrollable nav and fixed bottom */}
+      <nav className="h-full flex flex-col">
+        {/* Scrollable navigation container */}
+        <div className="flex-1 min-h-0 relative">
+          <div
+            ref={scrollRef}
+            className="h-full overflow-y-auto py-6 px-3"
+          >
+            <div className="flex flex-col gap-2">
+              {navItems.map((item) => (
+                <NavLink key={item.path} item={item} />
+              ))}
+            </div>
+          </div>
+
+          {/* Fade overlays - only visible when content is scrollable */}
+          <div
+            className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-background to-transparent pointer-events-none transition-opacity duration-200"
+            style={{ opacity: showTopFade ? 1 : 0 }}
+          />
+          <div
+            className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none transition-opacity duration-200"
+            style={{ opacity: showBottomFade ? 1 : 0 }}
+          />
         </div>
 
-        <div className="pt-2">
+        {/* Fixed bottom area with stats card */}
+        <div className="flex-none p-4 border-t border-border">
           <div className="border border-border p-4 space-y-4 rounded-sm">
             <div className="flex items-center gap-2">
               <div className="relative flex h-2 w-2">
@@ -174,5 +231,5 @@ export default function DashboardSidebar() {
         </div>
       </nav>
     </aside>
-  )
+  );
 }
